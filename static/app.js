@@ -101,4 +101,45 @@ function renderPeople(data) {
     </table>`;
 }
 
+const chatBox = document.getElementById("chat-messages");
+
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return div;
+}
+
+const chathistory = [];
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  addMessage("user", text);
+  chathistory.push({ role: "user", content: text });
+  chatInput.value = "";
+
+  const placeholder = addMessage("assistant", "...");
+
+  try {
+    const resp = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: chathistory }),
+    });
+    const data = await resp.json();
+    placeholder.textContent = data.answer;
+    chathistory.push({ role: "assistant", content: data.answer });
+  } catch (err) {
+    placeholder.textContent = "Error: try again";
+  }
+});
+
 loadStores();
