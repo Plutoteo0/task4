@@ -3,3 +3,4 @@ pyarrow
 pyyaml
 fastapi
 uvicorn
+python-dotenv
