@@ -1,7 +1,6 @@
 import pandas as pd
 import re
 from datetime import datetime
-import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 from itertools import combinations
