@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from metrics import load_store, compute_metrics
 from pydantic import BaseModel
 from chat import answer
+from filter import filter_users
 
 app = FastAPI()
 
@@ -26,7 +27,16 @@ def get_metrics(name: str):
 
 @app.post("/chat")
 def chat(req: ChatRequest):
-    text = answer(req.messages, METRICS)
-    return {"answer": text}
+    return answer(req.messages, METRICS, STORES)
+
+@app.get("/stores/{name}/users")
+def get_users(name, email_prefix: str = ""):
+    if name not in METRICS:
+        raise HTTPException(status_code=404, detail=f"Store {name} not found")
+    if not email_prefix:
+        return
+    prefixes = email_prefix.split(",")
+    rows = filter_users(STORES[name]["users"], prefixes)
+    return {"count": len(rows), "users": rows[:200]}
 
 app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")

@@ -1,4 +1,6 @@
-def run_tool(name, args, metrics):
+from filter import filter_users
+
+def run_tool(name, args, metrics, stores):
     if name == "list_stores":
         return {"stores": list(metrics)}
 
@@ -31,6 +33,33 @@ def run_tool(name, args, metrics):
             "total_revenue": round(sum(days.values()), 2),
             "days_counted": len(days),
             "data_range": {"first_date": min(daily), "last_date": max(daily)},
+        }
+
+    if name == "filter_users":
+        if not args.get("email_starts_with"):
+                    return {"error": "Cannot use tool"}
+        users = stores[store]["users"]
+        filtred_users = filter_users(users, args.get("email_starts_with"))
+        return {"count": len(filtred_users), "ui_action": {"type": "show_users", "store": store, "email_prefix": ",".join(args["email_starts_with"])}}
+
+    if name == "show_revenue_chart":
+        start = args.get("start_date")
+        end = args.get("end_date")
+        daily = m["daily_revenue"]
+        days = [d for d in daily if start <= d <= end]
+        total = round(sum(daily[d] for d in days), 2)
+        if not days:
+            return {"error": f"No data in this range. Data covers {min(daily)} to {max(daily)}"}
+        return {
+            "store": store,
+            "days_shown": len(days),
+            "total_revenue": total,
+            "ui_action": {
+                "type": "show_revenue",
+                "store": store,
+                "start_date": start,
+                "end_date": end,
+            },
         }
 
     return {"error": f"unknown tool: {name}"}
@@ -85,12 +114,47 @@ TOOLS = [
             "required": ["store"],
         },
     },
+    {
+        "name": "filter_users",
+    "description": (
+        "Show users of a store whose e-mail starts with given letters or prefixes "
+        "(e.g. 's' and 'p'). Updates the dashboard Users tab and returns how many users matched."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "store": STORE_PARAM,
+            "email_starts_with": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Letters or prefixes the e-mail must start with, e.g. ['s', 'p']",
+            },
+        },
+        "required": ["store", "email_starts_with"],
+    },
+    },
+        {
+        "name": "show_revenue_chart",
+        "description": (
+            "Change the Revenue chart of the dashboard to show a given date range for a store. "
+            "Use it when the user asks to SHOW or DISPLAY revenue on the chart. "
+            "For a plain numeric answer use get_revenue instead."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "store": STORE_PARAM,
+                "start_date": {"type": "string", "description": "Start date, format YYYY-MM-DD"},
+                "end_date": {"type": "string", "description": "End date, format YYYY-MM-DD"},
+            },
+            "required": ["store", "start_date", "end_date"],
+        },
+    },
 ]
 
 if __name__ == "__main__":
-    from app import METRICS
-    from tools import run_tool
-    print(run_tool("get_unique_users", {"store": "STORE1"}, METRICS))
-    print(run_tool("get_best_buyer", {"store": "STORE1"}, METRICS))
-    print(run_tool("get_revenue", {"store": "STORE1", "start_date": "2026-01-01", "end_date": "2026-01-31"}, METRICS))
-    print(run_tool("get_unique_users", {"store": "STORE9"}, METRICS))
+    from app import METRICS, STORES
+    print(run_tool("get_unique_users", {"store": "STORE1"}, METRICS, STORES))
+    print(run_tool("filter_users", {"store": "STORE1", "email_starts_with": ["s", "p"]}, METRICS, STORES))
+    print(run_tool("show_revenue_chart", {"store": "STORE1", "start_date": "2026-01-01", "end_date": "2026-01-31"}, METRICS, STORES))
+    print(run_tool("show_revenue_chart", {"store": "STORE1", "start_date": "2030-01-01", "end_date": "2030-01-31"}, METRICS, STORES))

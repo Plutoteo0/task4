@@ -16,9 +16,15 @@ SYSTEM = (
     "Use the data_range from get_revenue to say when a requested period is outside the data. "
     "All money amounts are in USD. Answer in the language of the user's question, briefly."
     "report only facts present in tool results, plain text without markdown"
+    "You can also show users on the dashboard with filter_users; after calling it, briefly say how many users were found. "
+    "You can show a revenue date range on the dashboard chart with show_revenue_chart; after calling it, briefly confirm the range. "
+    "When the user asks to show, display, plot or open revenue on the dashboard or chart "
+    "(e.g.'show revenue'), call show_revenue_chart, not get_revenue. "
+    "Use get_revenue only when the user asks for a number without asking to show it. "
 )
 
-def answer(messages, metrics):
+def answer(messages, metrics, stores):
+    actions = []
     for _ in range(6):
         resp = client.messages.create(
             model=MODEL,
@@ -29,24 +35,26 @@ def answer(messages, metrics):
         )
 
         if resp.stop_reason != "tool_use":
-            return "".join(b.text for b in resp.content)
+            return {"answer": "".join(b.text for b in resp.content if b.type == "text"), "actions": actions}
 
         messages.append({"role": "assistant", "content": resp.content})
 
         results = []
         for block in resp.content:
             if block.type == "tool_use":
-                result = run_tool(block.name, block.input, metrics)
+                result = run_tool(block.name, block.input, metrics, stores)
                 results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,
                     "content": json.dumps(result, ensure_ascii=False),
                 })
+                if result.get('ui_action'):
+                    actions.append(result["ui_action"])
         messages.append({"role": "user", "content": results})
 
-    return "Sorry, I could not finish the request."
+    return {"answer": "Sorry, I could not finish the request.", "actions": actions}
 
 if __name__ == "__main__":
-    from app import METRICS
-    msgs = [{"role": "user", "content": "Кто лучший покупатель в STORE3"}]
-    print(answer(msgs, METRICS))
+    from app import METRICS, STORES
+    msgs = [{"role": "user", "content": "Покажи пользователей STORE1, у которых email начинается на s или p"}]
+    print(answer(msgs, METRICS, STORES))
