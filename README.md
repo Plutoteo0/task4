@@ -1,9 +1,3 @@
-# Bookstore Dashboard
-
-Itransition Intern Data Engineer, Task 4.
-Live demo: https://booksdashboard.onrender.com/
-(free hosting: the first load after idle takes about a minute)
-
 ## Run locally
 
 Install dependencies:
@@ -38,5 +32,3 @@ Some tools also return a UI command that the page executes:
 - "Show STORE1 revenue for January 2026" opens the Revenue tab with the chart limited to that range.
 
 A plain question like "how much revenue in January?" is answered in text and does not change the page.
-
-Not implemented: filtering books by people's names in the title.
