@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from metrics import load_store, compute_metrics
 from pydantic import BaseModel
 from chat import answer
-from filter import filter_users
+from filters import filter_users
 
 app = FastAPI()
 
