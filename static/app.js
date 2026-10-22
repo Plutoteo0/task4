@@ -190,21 +190,29 @@ usersForm.addEventListener("submit", (e) => {
   loadUsers(storeSelect.value, usersPrefix.value);
 });
 
-async function runAction(action) {
-  if (action.type === "show_users") {
-    storeSelect.value = action.store;
-    loadMetrics(action.store);
-    usersPrefix.value = action.email_prefix;
+const actionHandler = {
+  show_users: (a) => {
+    storeSelect.value = a.store;
+    loadMetrics(a.store);
+    usersPrefix.value = a.email_prefix;
     showTab("users");
-    loadUsers(action.store, action.email_prefix);
-  } else if (action.type === "show_revenue") {
-    storeSelect.value = action.store;
-    await loadMetrics(action.store);
-    renderRevenue(currentMetrics, action.start_date, action.end_date);
+    loadUsers(a.store, a.email_prefix);
+  },
+  show_revenue: async (a) => {
+    storeSelect.value = a.store;
+    await loadMetrics(a.store);
+    renderRevenue(currentMetrics, a.start_date, a.end_date);
     showTab("revenue");
-  } else {
-    console.warn("Unknown action", action);
+  },
+};
+
+async function runAction(action) {
+  const handler = actionHandler[action.type];
+  if (!handler) {
+    console.warn("Unknown action type:", action.type);
+    return;
   }
+  await handler(action);
 }
 
 loadStores();
